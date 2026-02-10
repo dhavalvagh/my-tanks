@@ -208,7 +208,7 @@ function StatCard({ icon, label, value, change }: StatCardProps) {
     neutral: "text-muted-foreground"
   }
 
-  const TrendIcon = change?.trend === "up" ? TrendingUp : change?.trend === "down" ? TrendingDown : Minus
+  const TrendIcon = change?.trend === "up" ? TrendUp : change?.trend === "down" ? TrendDown : Minus
 
   return (
     <Card>
