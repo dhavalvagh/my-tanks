@@ -1,21 +1,31 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, lazy, Suspense } from "react"
+import { Eye, PencilSimpleLine, Trash } from "phosphor-react"
 import "./index.css"
-import "./App.css"
 import { supabase } from "./services/supabase"
 import { useAuth } from "./hooks/useAuth"
 import { useAppState } from "./hooks/useAppState"
 import { useNavigation } from "./hooks/useNavigation"
 import { useReminders } from "./hooks/useReminders"
-import AuthForm from "./components/AuthForm"
-import AppLayout from "./components/AppLayout"
-import Dashboard from "./components/Dashboard"
-import TankDetail from "./components/TankDetail"
-import FishDetail from "./components/FishDetail"
-import LogsManager from "./components/LogsManager"
-import TankManager from "./components/TankManager"
-import FishManager from "./components/FishManager"
-import type { Tank } from "./components/TankManager"
-import type { FishRecord } from "./components/FishManager"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import AuthForm from "./components/AuthForm.shadcn"
+import AppLayout from "./components/AppLayout.shadcn"
+import type { Tank } from "./components/TankManager.shadcn"
+import type { FishRecord } from "./components/FishManager.shadcn"
+
+// Lazy load heavy components
+const Dashboard = lazy(() => import("./components/Dashboard.shadcn"))
+const TankDetail = lazy(() => import("./components/TankDetail.shadcn"))
+const FishDetail = lazy(() => import("./components/FishDetail.shadcn"))
+const LogsManager = lazy(() => import("./components/LogsManager.shadcn"))
+const TankManager = lazy(() => import("./components/TankManager.shadcn"))
+const FishManager = lazy(() => import("./components/FishManager.shadcn"))
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex min-h-[50vh] items-center justify-center">
+    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+  </div>
+)
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -139,140 +149,148 @@ function App() {
         activeView={activeView}
         tanks={state.tanks}
         rightSidebarContent={activeView === "tanks" ? (
-          <div className="card" style={{ background: "var(--surface-0)" }}>
-            <h3 style={{ margin: "0 0 var(--space-3) 0", fontSize: "var(--text-lg)" }}>How volume is calculated</h3>
-            <div style={{ fontSize: "var(--text-sm)", lineHeight: "var(--leading-relaxed)", color: "var(--text-secondary)" }}>
-              <p style={{ marginBottom: "var(--space-3)" }}>
-                The water volume calculation starts with the tank's outer dimensions and makes adjustments:
+          <Card>
+            <CardHeader>
+              <CardTitle>How volume is calculated</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                The water volume calculation starts with the tank&apos;s outer dimensions and makes adjustments.
               </p>
-              
-              <div style={{ marginBottom: "var(--space-3)" }}>
-                <strong style={{ color: "var(--text-primary)" }}>Base Formula:</strong>
-                <div style={{ background: "var(--surface-2)", padding: "var(--space-2)", borderRadius: "var(--radius-sm)", marginTop: "var(--space-2)", fontFamily: "monospace" }}>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+              <div>
+                <p className="font-semibold text-foreground">Base formula</p>
+                <div className="mt-2 rounded-md bg-muted px-3 py-2 font-mono text-xs">
                   Length × Width × Height ÷ 1000 = Liters
                 </div>
               </div>
 
-              <div style={{ marginBottom: "var(--space-3)" }}>
-                <strong style={{ color: "var(--text-primary)" }}>Adjustments:</strong>
-                <ul style={{ marginTop: "var(--space-2)", paddingLeft: "var(--space-4)", listStyle: "disc" }}>
-                  <li style={{ marginBottom: "var(--space-2)" }}>
-                    <strong>Headspace:</strong> Reduces height (gap from waterline to rim)
-                  </li>
-                  <li style={{ marginBottom: "var(--space-2)" }}>
-                    <strong>Substrate:</strong> Reduces height (gravel/sand depth)
-                  </li>
-                  <li style={{ marginBottom: "var(--space-2)" }}>
-                    <strong>Glass thickness:</strong> Reduces all dimensions (subtracted from both sides)
-                  </li>
+              <div>
+                <p className="font-semibold text-foreground">Adjustments</p>
+                <ul className="mt-2 list-disc space-y-2 pl-5">
+                  <li><strong>Headspace:</strong> reduces height (gap from waterline to rim)</li>
+                  <li><strong>Substrate:</strong> reduces height (gravel/sand depth)</li>
+                  <li><strong>Glass thickness:</strong> reduces all dimensions (subtracted from both sides)</li>
                 </ul>
               </div>
 
-              <div style={{ background: "var(--info-bg)", padding: "var(--space-3)", borderRadius: "var(--radius-md)", borderLeft: "3px solid var(--info)" }}>
-                <strong style={{ color: "var(--info)" }}>💡 Example:</strong>
-                <div style={{ marginTop: "var(--space-2)" }}>
+              <div className="rounded-md border-l-4 border-info bg-info/10 px-3 py-3">
+                <p className="font-semibold text-info">💡 Example</p>
+                <p className="mt-1 text-foreground">
                   30×18×20 cm tank with 2.5 cm headspace, 2 cm substrate, and 0.15 cm glass = <strong>8L</strong>
-                </div>
+                </p>
               </div>
 
-              <div style={{ marginTop: "var(--space-5)", paddingTop: "var(--space-4)", borderTop: "1px solid var(--border)" }}>
-                <strong style={{ color: "var(--text-primary)", display: "block", marginBottom: "var(--space-3)" }}>Flow Rate Recommendations:</strong>
-                <div style={{ marginBottom: "var(--space-3)" }}>
-                  <div style={{ fontWeight: "var(--font-semibold)", color: "var(--text-primary)", marginBottom: "var(--space-1)" }}>🌿 Planted Tanks:</div>
-                  <div style={{ paddingLeft: "var(--space-4)" }}>3-5× tank volume per hour</div>
-                  <div style={{ paddingLeft: "var(--space-4)", fontSize: "var(--text-xs)", color: "var(--text-tertiary)", marginTop: "var(--space-1)" }}>
-                    (e.g., 8L tank = 24-40 L/h)
+              <div className="border-t pt-4">
+                <p className="font-semibold text-foreground mb-3">Flow rate recommendations</p>
+                <div className="space-y-3">
+                  <div>
+                    <div className="font-semibold text-foreground">🌿 Planted tanks</div>
+                    <p className="text-sm">3–5× tank volume per hour (e.g., 8L = 24–40 L/h)</p>
                   </div>
-                </div>
-                <div>
-                  <div style={{ fontWeight: "var(--font-semibold)", color: "var(--text-primary)", marginBottom: "var(--space-1)" }}>🐠 Fish-Only Tanks:</div>
-                  <div style={{ paddingLeft: "var(--space-4)" }}>5-8× tank volume per hour</div>
-                  <div style={{ paddingLeft: "var(--space-4)", fontSize: "var(--text-xs)", color: "var(--text-tertiary)", marginTop: "var(--space-1)" }}>
-                    (e.g., 8L tank = 40-64 L/h)
+                  <div>
+                    <div className="font-semibold text-foreground">🐠 Fish-only tanks</div>
+                    <p className="text-sm">5–8× tank volume per hour (e.g., 8L = 40–64 L/h)</p>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         ) : activeView === "fish" ? (
-          <div className="card" style={{ background: "var(--surface-0)" }}>
-            <h3 style={{ margin: "0 0 var(--space-3) 0", fontSize: "var(--text-lg)" }}>All Fish</h3>
-            <div className="mini-list">
-              {state.fishes.length === 0 && <p className="muted">No fish yet.</p>}
+          <Card>
+            <CardHeader>
+              <CardTitle>All Fish</CardTitle>
+              <p className="text-sm text-muted-foreground">Quick actions for your roster</p>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {state.fishes.length === 0 && (
+                <p className="text-sm text-muted-foreground">No fish yet.</p>
+              )}
               {state.fishes.map(f => (
-                <div 
-                  key={f.id} 
-                  className="list-row" 
-                  style={{ position: "relative", cursor: "pointer" }}
-                  onClick={() => handleOpenFishDetail(f.id)}
-                  onMouseEnter={(e) => {
-                    const actions = e.currentTarget.querySelector('.hover-actions') as HTMLElement
-                    if (actions) actions.style.opacity = "1"
-                  }}
-                  onMouseLeave={(e) => {
-                    const actions = e.currentTarget.querySelector('.hover-actions') as HTMLElement
-                    if (actions) actions.style.opacity = "0"
-                  }}
+                <div
+                  key={f.id}
+                  className="flex items-center justify-between rounded-md border px-3 py-2 hover:bg-muted"
                 >
-                  <div>
-                    <strong>{f.name}</strong> <span className="pill subtle">×{f.count}</span>
-                    <p className="muted">{tankName(f.tankId)}</p>
+                  <div className="flex items-center gap-3">
+                    {f.imageUrl ? (
+                      <img
+                        src={f.imageUrl}
+                        alt={f.name}
+                        className="h-10 w-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-lg">
+                        🐠
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-semibold text-foreground flex items-center gap-2">
+                        {f.name}
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-foreground">×{f.count}</span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">{tankName(f.tankId)}</p>
+                    </div>
                   </div>
-                  {f.imageUrl && <img src={f.imageUrl} className="thumb" alt="fish" />}
-                  <div 
-                    className="hover-actions"
-                    style={{ 
-                      opacity: 0,
-                      transition: "opacity var(--transition-fast)",
-                      position: "absolute",
-                      right: "var(--space-3)",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      display: "flex",
-                      gap: "var(--space-1)"
-                    }}
-                  >
-                    <button 
-                      className="ghost compact" 
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setEditingFishId(f.id)
-                        const fishManagerSection = document.querySelector('section.card') as HTMLElement
-                        if (fishManagerSection) {
-                          fishManagerSection.scrollIntoView({ behavior: 'smooth' })
-                        }
-                      }} 
-                      style={{ fontSize: "var(--text-sm)", padding: "var(--space-1) var(--space-2)" }}
+                  <div className="flex gap-1.5">
+                    <button
+                      className="flex h-9 w-9 items-center justify-center rounded-md border hover:bg-muted"
+                      onClick={() => handleOpenFishDetail(f.id)}
+                      aria-label={`View ${f.name}`}
+                      title="View"
                     >
-                      ✎
+                      <Eye className="h-4 w-4" />
                     </button>
-                    <button 
-                      className="ghost compact" 
-                      onClick={(e) => { e.stopPropagation(); handleDeleteFish(f.id) }} 
-                      style={{ fontSize: "var(--text-sm)", padding: "var(--space-1) var(--space-2)" }}
+                    <button
+                      className="flex h-9 w-9 items-center justify-center rounded-md border hover:bg-muted"
+                      onClick={() => {
+                        setEditingFishId(f.id)
+                        setActiveView("fish")
+                      }}
+                      aria-label={`Edit ${f.name}`}
+                      title="Edit"
                     >
-                      🗑
+                      <PencilSimpleLine className="h-4 w-4" />
+                    </button>
+                    <button
+                      className="flex h-9 w-9 items-center justify-center rounded-md border text-destructive hover:bg-destructive/10"
+                      onClick={() => handleDeleteFish(f.id)}
+                      aria-label={`Delete ${f.name}`}
+                      title="Delete"
+                    >
+                      <Trash className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         ) : undefined}
         onToggleSidebar={() => setSidebarOpen(v => !v)}
         onNavigate={handleNavigate}
         onOpenTankDetail={handleOpenTankDetail}
         onSignOut={signOut}
       >
-        {(() => {
+        <Suspense fallback={<LoadingFallback />}>
+          {(() => {
           if (activeView === "fish-detail") {
             const selectedFish = selectedFishId ? state.fishes.find(f => f.id === selectedFishId) : null
             if (!selectedFish) {
-              return <section className="card"><p className="muted">Fish not found.</p></section>
+              return (
+                <Card>
+                  <CardContent>
+                    <p className="text-muted-foreground">Fish not found.</p>
+                  </CardContent>
+                </Card>
+              )
             }
             const fishTank = state.tanks.find(t => t.id === selectedFish.tankId)
             if (!fishTank) {
-              return <section className="card"><p className="muted">Tank not found for this fish.</p></section>
+              return (
+                <Card>
+                  <CardContent>
+                    <p className="text-muted-foreground">Tank not found for this fish.</p>
+                  </CardContent>
+                </Card>
+              )
             }
             return (
               <FishDetail
@@ -288,7 +306,13 @@ function App() {
 
           if (activeView === "tank-detail") {
             if (!selectedTank) {
-              return <section className="card"><p className="muted">No tank selected. Add or choose a tank from the menu.</p></section>
+              return (
+                <Card>
+                  <CardContent>
+                    <p className="text-muted-foreground">No tank selected. Add or choose a tank from the menu.</p>
+                  </CardContent>
+                </Card>
+              )
             }
             return (
               <TankDetail
@@ -351,10 +375,15 @@ function App() {
           }
 
           return <Dashboard tanks={state.tanks} fishes={state.fishes} onOpenTankDetail={handleOpenTankDetail} onOpenFishDetail={handleOpenFishDetail} />
-        })()}
+          })()}
+        </Suspense>
       </AppLayout>
 
-      {(status || error) && <div className="toast">{status || error}</div>}
+      {(status || error) && (
+        <div className="fixed bottom-4 right-4 rounded-md bg-secondary px-4 py-2 text-secondary-foreground shadow-lg">
+          {status || error}
+        </div>
+      )}
     </>
   )
 }

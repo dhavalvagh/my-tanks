@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react"
 import { supabase } from "../services/supabase"
 import { requestPermission } from "../services/notifications"
-import type { Tank } from "../components/TankManager"
-import type { FishRecord } from "../components/FishManager"
+import type { Tank } from "../components/TankManager.shadcn"
+import type { FishRecord } from "../components/FishManager.shadcn"
 
 type WaterChange = {
   id: string
@@ -41,7 +41,8 @@ export type AppState = {
   reminders: Reminder[]
 }
 
-const LOCAL_KEY = "tank-twins-state"
+const LOCAL_KEY = "my-tanks-state"
+const LEGACY_LOCAL_KEY = "tank-twins-state"
 
 const defaultState: AppState = {
   profile: { username: "" },
@@ -72,8 +73,11 @@ export function useAppState(userId: string | null, username: string) {
   const [state, setState] = useState<AppState>(() => {
     try {
       const raw = localStorage.getItem(LOCAL_KEY)
-      if (raw) {
-        const parsed = JSON.parse(raw) as AppState
+      const legacyRaw = raw ?? localStorage.getItem(LEGACY_LOCAL_KEY)
+      if (legacyRaw) {
+        const parsed = JSON.parse(legacyRaw) as AppState
+        // migrate legacy key forward
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(parsed))
         return { ...defaultState, ...parsed }
       }
     } catch (err) {

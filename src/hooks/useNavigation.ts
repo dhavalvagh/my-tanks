@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from "react"
 
-const NAV_KEY = "tank-twins-nav"
+const NAV_KEY = "my-tanks-nav"
+const LEGACY_NAV_KEY = "tank-twins-nav"
 
 type View = "dashboard" | "tanks" | "fish" | "logs" | "tank-detail" | "fish-detail"
 
 function getInitialNavState() {
   try {
     const raw = localStorage.getItem(NAV_KEY)
-    if (raw) {
-      return JSON.parse(raw) as { view?: View; tankId?: string | null; fishId?: string | null }
+    const legacyRaw = raw ?? localStorage.getItem(LEGACY_NAV_KEY)
+    if (legacyRaw) {
+      const parsed = JSON.parse(legacyRaw) as { view?: View; tankId?: string | null; fishId?: string | null }
+      // migrate legacy key forward
+      localStorage.setItem(NAV_KEY, JSON.stringify(parsed))
+      return parsed
     }
   } catch (err) {
     console.warn("Failed to read nav state", err)

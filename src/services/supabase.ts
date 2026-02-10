@@ -10,6 +10,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl!, supabaseAnonKey!, {
   auth: {
     persistSession: true,
-    storageKey: "tank-twins-auth"
+    storageKey: "my-tanks-auth"
   }
 })

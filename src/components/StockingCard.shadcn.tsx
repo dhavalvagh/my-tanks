@@ -1,6 +1,8 @@
 import { useState } from "react"
-import type { Tank } from "./TankManager"
-import type { FishRecord } from "./FishManager"
+import type { Tank } from "./TankManager.shadcn"
+import type { FishRecord } from "./FishManager.shadcn"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 export type FishBioload = {
   name: string
@@ -18,7 +20,6 @@ type StockingCardProps = {
   totalBioload: number
   capacity: number
   ratio: number
-  status: string
   colors: string[]
   onClick?: () => void
 }
@@ -31,7 +32,6 @@ export default function StockingCard({
   totalBioload, 
   capacity, 
   ratio, 
-  status, 
   colors,
   onClick
 }: StockingCardProps) {
@@ -40,107 +40,50 @@ export default function StockingCard({
   return (
     <div 
       onClick={onClick}
-      style={{ 
-        padding: 0,
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        background: "var(--surface-1)", 
-        border: "1px solid var(--border)", 
-        borderRadius: "var(--radius-lg)", 
-        boxShadow: "var(--elevation-1)", 
-        transition: "all var(--transition-base)",
-        cursor: onClick ? "pointer" : "default"
-      }}
-      onMouseEnter={onClick ? (e) => { e.currentTarget.style.boxShadow = "var(--elevation-4)"; e.currentTarget.style.borderColor = "var(--primary)"; e.currentTarget.style.transform = "translateY(-2px)"; } : undefined}
-      onMouseLeave={onClick ? (e) => { e.currentTarget.style.boxShadow = "var(--elevation-1)"; e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.transform = "translateY(0)"; } : undefined}
+      className={cn(
+        "overflow-hidden rounded-lg border bg-card shadow-md transition-all",
+        onClick && "cursor-pointer hover:shadow-xl hover:-translate-y-0.5 hover:border-primary"
+      )}
     >
       {/* Tank Visual Header */}
-      <div style={{
-        background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)",
-        padding: "var(--space-8) var(--space-5)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        justifyContent: "center",
-        minHeight: "140px",
-        position: "relative"
-      }}>
-        <div style={{
-          fontSize: "var(--text-xs)",
-          textTransform: "uppercase",
-          letterSpacing: "0.1em",
-          color: "rgba(255, 255, 255, 0.8)",
-          marginBottom: "var(--space-2)"
-        }}>
+      <div className="relative flex min-h-[140px] flex-col items-start justify-center bg-gradient-to-br from-primary to-primary/80 p-8 px-6">
+        <div className="mb-2 text-xs uppercase tracking-widest text-white/80">
           {tank.label}
         </div>
-        <h3 style={{
-          fontSize: "var(--text-2xl)",
-          fontWeight: "var(--font-bold)",
-          color: "white",
-          margin: 0,
-          marginBottom: "var(--space-2)"
-        }}>
+        <h3 className="mb-2 text-2xl font-bold text-white">
           {tank.name}
         </h3>
-        <div style={{
-          fontSize: "var(--text-sm)",
-          color: "rgba(255, 255, 255, 0.9)",
-          marginBottom: "var(--space-1)"
-        }}>
+        <div className="mb-1 text-sm text-white/90">
           {tankVolume}L
         </div>
-        <div style={{
-          fontSize: "var(--text-sm)",
-          color: "rgba(255, 255, 255, 0.8)"
-        }}>
+        <div className="text-sm text-white/80">
           {fishInTank.length} species · {fishInTank.reduce((sum, f) => sum + f.count, 0)} fish
         </div>
-        <span 
-          className={`pill ${status}`} 
-          style={{
-            position: "absolute",
-            top: "var(--space-4)",
-            right: "var(--space-4)"
-          }}
+        <Badge
+          variant="secondary"
+          className="absolute right-4 top-4 bg-white/20 text-white hover:bg-white/30"
         >
           {Math.round(ratio * 100)}%
-        </span>
+        </Badge>
       </div>
 
       {/* Chart Section with Tooltip */}
-      <div style={{ padding: "var(--space-5)", display: "flex", justifyContent: "center", alignItems: "center", position: "relative", minHeight: "160px" }}>
+      <div className="relative flex min-h-[160px] items-center justify-center p-6">
         {hoveredFish && (
-          <div style={{
-            position: "absolute",
-            top: "0",
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 1000,
-            pointerEvents: "none"
-          }}>
-            <div style={{
-              position: "relative",
-              padding: "var(--space-2) var(--space-3)",
-              background: "var(--surface-3)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)",
-              boxShadow: "var(--elevation-4)",
-              whiteSpace: "nowrap"
-            }}>
-              <div style={{ fontWeight: "var(--font-semibold)", fontSize: "var(--text-sm)", marginBottom: "var(--space-1)" }}>
+          <div className="pointer-events-none absolute left-1/2 top-0 z-50 -translate-x-1/2">
+            <div className="relative whitespace-nowrap rounded-md border bg-popover p-2 px-3 shadow-lg">
+              <div className="mb-1 text-sm font-semibold">
                 {hoveredFish.name}
               </div>
-              <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)" }}>
+              <div className="text-xs text-muted-foreground">
                 Count: {hoveredFish.count} · Bioload: {hoveredFish.totalBioload.toFixed(1)} ({((hoveredFish.totalBioload / totalBioload) * 100).toFixed(1)}%)
               </div>
             </div>
           </div>
         )}
         
-        <div style={{ position: "relative", width: "160px", height: "160px" }}>
-          <svg viewBox="-10 -10 120 120" style={{ transform: "rotate(-90deg)" }}>
+        <div className="relative h-40 w-40">
+          <svg viewBox="-10 -10 120 120" className="-rotate-90">
             {fishBioloads.map((fish, idx) => {
               const percentage = (fish.totalBioload / totalBioload) * 100
               const startPercentage = fishBioloads
@@ -165,13 +108,14 @@ export default function StockingCard({
                       fill="none"
                       stroke={colors[idx % colors.length]}
                       strokeWidth={outerRadius - innerRadius}
-                      style={{ 
-                        cursor: "pointer",
-                        transition: "all var(--transition-base)",
+                      className={cn(
+                        "cursor-pointer transition-all",
+                        hoveredFish === fish && "scale-110 drop-shadow-lg"
+                      )}
+                      style={{
                         filter: hoveredFish === fish 
                           ? "drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4))" 
                           : "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))",
-                        transform: hoveredFish === fish ? "scale(1.1)" : "scale(1)",
                         transformOrigin: "center"
                       }}
                       onMouseEnter={() => setHoveredFish(fish)}
@@ -204,11 +148,10 @@ export default function StockingCard({
                     Z
                   `}
                   fill={colors[idx % colors.length]}
-                  stroke="var(--surface-1)"
+                  stroke="hsl(var(--card))"
                   strokeWidth="1"
+                  className="cursor-pointer transition-all"
                   style={{ 
-                    cursor: "pointer",
-                    transition: "all var(--transition-base)",
                     filter: hoveredFish === fish 
                       ? "drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4))" 
                       : "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))",
@@ -221,18 +164,11 @@ export default function StockingCard({
               )
             })}
           </svg>
-          <div style={{ 
-            position: "absolute", 
-            top: "50%", 
-            left: "50%", 
-            transform: "translate(-50%, -50%)",
-            textAlign: "center",
-            pointerEvents: "none"
-          }}>
-            <div style={{ fontSize: "var(--text-2xl)", fontWeight: "var(--font-bold)" }}>
+          <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+            <div className="text-2xl font-bold">
               {totalBioload.toFixed(1)}
             </div>
-            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)" }}>
+            <div className="text-xs text-muted-foreground">
               / {capacity.toFixed(0)}
             </div>
           </div>
