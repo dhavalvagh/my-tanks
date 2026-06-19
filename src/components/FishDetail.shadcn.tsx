@@ -1,47 +1,59 @@
-import { useState } from "react"
-import { ArrowLeft, PencilSimpleLine, X, UploadSimple } from "phosphor-react"
-import type { FishRecord } from "./FishManager.shadcn"
-import type { Tank } from "./TankManager.shadcn"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, PencilSimpleLine, UploadSimple, X } from "phosphor-react";
+import { useState } from "react";
+import type { FishRecord } from "./FishManager.shadcn";
+import type { Tank } from "./TankManager.shadcn";
 
 type Props = {
-  fish: FishRecord
-  tank: Tank
-  onSave: (fish: FishRecord) => void
-  onDelete: (fishId: string) => void
-  onUploadImage: (file: File) => Promise<string | undefined>
-  onNavigateBack: () => void
-}
+  fish: FishRecord;
+  tank: Tank;
+  onSave: (fish: FishRecord) => void;
+  onDelete: (fishId: string) => void;
+  onUploadImage: (file: File) => Promise<string | undefined>;
+  onNavigateBack: () => void;
+};
 
-export default function FishDetail({ fish, tank, onSave, onDelete, onUploadImage, onNavigateBack }: Props) {
-  const [editing, setEditing] = useState(false)
+export default function FishDetail({
+  fish,
+  tank,
+  onSave,
+  onDelete,
+  onUploadImage,
+  onNavigateBack,
+}: Props) {
+  const [editing, setEditing] = useState(false);
   const [draftFish, setDraftFish] = useState<Partial<FishRecord>>(() => ({
     name: fish.name,
     count: fish.count,
     tankId: fish.tankId,
     imageUrl: fish.imageUrl,
     maxSizeCm: fish.maxSizeCm,
-    bioload: fish.bioload
-  }))
-  const [uploadStatus, setUploadStatus] = useState("")
-  const [imagePreview, setImagePreview] = useState<string | null>(fish.imageUrl || null)
+    bioload: fish.bioload,
+  }));
+  const [uploadStatus, setUploadStatus] = useState("");
+  const [daysOwned] = useState(() =>
+    Math.floor((Date.now() - fish.addedAt) / (1000 * 60 * 60 * 24)),
+  );
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    fish.imageUrl || null,
+  );
 
   async function handleUploadImage(file: File) {
-    setUploadStatus("Uploading photo…")
-    const url = await onUploadImage(file)
-    setUploadStatus("")
+    setUploadStatus("Uploading photo…");
+    const url = await onUploadImage(file);
+    setUploadStatus("");
     if (url) {
-      setDraftFish(prev => ({ ...prev, imageUrl: url }))
-      setImagePreview(url)
+      setDraftFish((prev) => ({ ...prev, imageUrl: url }));
+      setImagePreview(url);
     }
   }
 
   function handleSave() {
-    if (!draftFish.name || !draftFish.count) return
+    if (!draftFish.name || !draftFish.count) return;
 
     const updatedFish: FishRecord = {
       id: fish.id,
@@ -51,22 +63,23 @@ export default function FishDetail({ fish, tank, onSave, onDelete, onUploadImage
       imageUrl: draftFish.imageUrl,
       maxSizeCm: draftFish.maxSizeCm ?? null,
       bioload: draftFish.bioload ?? null,
-      addedAt: fish.addedAt
-    }
+      addedAt: fish.addedAt,
+    };
 
-    onSave(updatedFish)
-    setEditing(false)
+    onSave(updatedFish);
+    setEditing(false);
   }
 
   function handleDelete() {
     if (confirm(`Delete ${fish.name}? This action cannot be undone.`)) {
-      onDelete(fish.id)
-      onNavigateBack()
+      onDelete(fish.id);
+      onNavigateBack();
     }
   }
 
-  const calculatedBioload = fish.bioload ?? Math.max(0.3, ((fish.maxSizeCm ?? 5) / 5) * 0.5)
-  const totalBioload = calculatedBioload * fish.count
+  const calculatedBioload =
+    fish.bioload ?? Math.max(0.3, ((fish.maxSizeCm ?? 5) / 5) * 0.5);
+  const totalBioload = calculatedBioload * fish.count;
 
   return (
     <div className="space-y-6">
@@ -85,7 +98,7 @@ export default function FishDetail({ fish, tank, onSave, onDelete, onUploadImage
           </Badge>
           <Button
             variant={editing ? "outline" : "default"}
-            onClick={() => setEditing(v => !v)}
+            onClick={() => setEditing((v) => !v)}
           >
             {editing ? (
               <>
@@ -111,7 +124,9 @@ export default function FishDetail({ fish, tank, onSave, onDelete, onUploadImage
                 <Input
                   id="species-name"
                   value={draftFish.name ?? ""}
-                  onChange={(e) => setDraftFish({ ...draftFish, name: e.target.value })}
+                  onChange={(e) =>
+                    setDraftFish({ ...draftFish, name: e.target.value })
+                  }
                 />
               </div>
 
@@ -122,7 +137,12 @@ export default function FishDetail({ fish, tank, onSave, onDelete, onUploadImage
                     id="count"
                     type="number"
                     value={draftFish.count ?? ""}
-                    onChange={(e) => setDraftFish({ ...draftFish, count: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setDraftFish({
+                        ...draftFish,
+                        count: Number(e.target.value),
+                      })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -131,7 +151,12 @@ export default function FishDetail({ fish, tank, onSave, onDelete, onUploadImage
                     id="max-size"
                     type="number"
                     value={draftFish.maxSizeCm ?? ""}
-                    onChange={(e) => setDraftFish({ ...draftFish, maxSizeCm: Number(e.target.value) || null })}
+                    onChange={(e) =>
+                      setDraftFish({
+                        ...draftFish,
+                        maxSizeCm: Number(e.target.value) || null,
+                      })
+                    }
                   />
                 </div>
               </div>
@@ -143,7 +168,12 @@ export default function FishDetail({ fish, tank, onSave, onDelete, onUploadImage
                   type="number"
                   step="0.1"
                   value={draftFish.bioload ?? ""}
-                  onChange={(e) => setDraftFish({ ...draftFish, bioload: Number(e.target.value) || null })}
+                  onChange={(e) =>
+                    setDraftFish({
+                      ...draftFish,
+                      bioload: Number(e.target.value) || null,
+                    })
+                  }
                 />
               </div>
 
@@ -152,7 +182,9 @@ export default function FishDetail({ fish, tank, onSave, onDelete, onUploadImage
                 <div className="flex items-center gap-3">
                   <Button
                     variant="outline"
-                    onClick={() => document.getElementById('fish-photo')?.click()}
+                    onClick={() =>
+                      document.getElementById("fish-photo")?.click()
+                    }
                     type="button"
                     className="w-full"
                   >
@@ -163,12 +195,17 @@ export default function FishDetail({ fish, tank, onSave, onDelete, onUploadImage
                     id="fish-photo"
                     type="file"
                     accept="image/*"
-                    onChange={(e) => e.target.files?.[0] && handleUploadImage(e.target.files[0])}
+                    onChange={(e) =>
+                      e.target.files?.[0] &&
+                      handleUploadImage(e.target.files[0])
+                    }
                     className="hidden"
                   />
                 </div>
                 {uploadStatus && (
-                  <p className="text-sm text-muted-foreground">{uploadStatus}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {uploadStatus}
+                  </p>
                 )}
               </div>
 
@@ -190,9 +227,9 @@ export default function FishDetail({ fish, tank, onSave, onDelete, onUploadImage
               <Button
                 variant="outline"
                 onClick={() => {
-                  setEditing(false)
-                  setDraftFish(fish)
-                  setImagePreview(fish.imageUrl || null)
+                  setEditing(false);
+                  setDraftFish(fish);
+                  setImagePreview(fish.imageUrl || null);
                 }}
                 className="flex-1"
               >
@@ -261,12 +298,20 @@ export default function FishDetail({ fish, tank, onSave, onDelete, onUploadImage
                   </p>
                 </div>
                 <div>
-                  <p className="mb-1 text-sm text-muted-foreground">Bioload per fish</p>
-                  <p className="text-lg font-semibold">{calculatedBioload.toFixed(2)}</p>
+                  <p className="mb-1 text-sm text-muted-foreground">
+                    Bioload per fish
+                  </p>
+                  <p className="text-lg font-semibold">
+                    {calculatedBioload.toFixed(2)}
+                  </p>
                 </div>
                 <div>
-                  <p className="mb-1 text-sm text-muted-foreground">Total bioload</p>
-                  <p className="text-lg font-semibold">{totalBioload.toFixed(2)}</p>
+                  <p className="mb-1 text-sm text-muted-foreground">
+                    Total bioload
+                  </p>
+                  <p className="text-lg font-semibold">
+                    {totalBioload.toFixed(2)}
+                  </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     ({fish.count} × {calculatedBioload.toFixed(2)})
                   </p>
@@ -285,14 +330,14 @@ export default function FishDetail({ fish, tank, onSave, onDelete, onUploadImage
                 <div>
                   <p className="mb-1 text-sm text-muted-foreground">Added</p>
                   <p className="font-medium">
-                    {new Date(fish.addedAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
+                    {new Date(fish.addedAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
                     })}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {Math.floor((Date.now() - fish.addedAt) / (1000 * 60 * 60 * 24))} days ago
+                    {daysOwned} days ago
                   </p>
                 </div>
               </CardContent>
@@ -316,5 +361,5 @@ export default function FishDetail({ fish, tank, onSave, onDelete, onUploadImage
         </div>
       )}
     </div>
-  )
+  );
 }

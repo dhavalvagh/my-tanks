@@ -7,7 +7,32 @@ on:
     branches-ignore: [main]
 
 jobs:
-  build:
+  # ─── Quality Gate ───────────────────────────────────────────────
+  quality:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Verify lockfile integrity
+        run: npm ci --ignore-scripts
+
+      - name: Lint (ESLint + Security rules)
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+  # ─── Security Scanning ─────────────────────────────────────────
+  security:
+    name: Security Audit
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -22,11 +47,91 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
+      - name: Audit dependencies (high + critical)
+        run: npm audit --audit-level=high
 
-      - name: Type check
-        run: npx tsc --noEmit
+      - name: Check for outdated packages with vulnerabilities
+        run: |
+          echo "## Dependency Health Check" >> $GITHUB_STEP_SUMMARY
+          npm outdated --long || true
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+      - name: Verify no install scripts in dependencies
+        run: |
+          # Flag packages that run postinstall scripts (potential supply-chain risk)
+          echo "Checking for lifecycle scripts in dependencies..."
+          node -e "
+            const pkg = require('./package-lock.json');
+            const risky = [];
+            for (const [name, info] of Object.entries(pkg.packages || {})) {
+              if (info.hasInstallScript && name !== '') {
+                risky.push(name.replace('node_modules/', ''));
+              }
+            }
+            if (risky.length) {
+              console.log('⚠️  Packages with install scripts:', risky.join(', '));
+            } else {
+              console.log('✅ No packages with install scripts found');
+            }
+          "
+
+  # ─── License Compliance ────────────────────────────────────────
+  licenses:
+    name: License Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check licenses
+        run: |
+          npx license-checker --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0;CC-BY-3.0;CC-BY-4.0;Unlicense;BlueOak-1.0.0;Python-2.0;OFL-1.1;MPL-2.0" --excludePrivatePackages --summary
+
+  # ─── Build & Bundle Analysis ───────────────────────────────────
+  build:
+    name: Build & Bundle Size
+    needs: [quality, security, licenses]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build
         run: npm run build
+
+      - name: Check bundle size
+        run: |
+          echo "## Bundle Size Report" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          find dist/assets -name "*.js" -o -name "*.css" | while read f; do
+            size=$(wc -c < "$f" | tr -d ' ')
+            gzip_size=$(gzip -c "$f" | wc -c | tr -d ' ')
+            echo "$(basename $f): ${size}B (gzip: ${gzip_size}B)"
+          done >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+          # Fail if total JS bundle exceeds 750KB gzipped
+          total_gzip=$(find dist/assets -name "*.js" -exec gzip -c {} \; | wc -c | tr -d ' ')
+          echo "Total JS gzipped: ${total_gzip} bytes"
+          if [ "$total_gzip" -gt 768000 ]; then
+            echo "::error::Bundle size exceeds 750KB gzipped limit (${total_gzip} bytes)"
+            exit 1
+          fi

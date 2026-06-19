@@ -1,0 +1,131 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "security:openssf-scorecard",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":automergeMinor",
+    "group:allNonMajor"
+  ],
+  "labels": [
+    "dependencies",
+    "automated"
+  ],
+  "rangeStrategy": "pin",
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": [
+      "security"
+    ],
+    "assignees": [
+      "dhavalvagh"
+    ]
+  },
+  "packageRules": [
+    {
+      "description": "Auto-merge patch updates for dev dependencies",
+      "matchDepTypes": [
+        "devDependencies"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Auto-merge minor updates for dev dependencies",
+      "matchDepTypes": [
+        "devDependencies"
+      ],
+      "matchUpdateTypes": [
+        "minor"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Auto-merge patch updates for production (after CI passes)",
+      "matchDepTypes": [
+        "dependencies"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Group major updates - require manual review",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false,
+      "labels": [
+        "dependencies",
+        "breaking-change"
+      ]
+    },
+    {
+      "description": "Group React ecosystem updates together",
+      "matchPackageNames": [
+        "react",
+        "react-dom",
+        "@types/react",
+        "@types/react-dom"
+      ],
+      "groupName": "react"
+    },
+    {
+      "description": "Group Radix UI updates together",
+      "matchPackagePatterns": [
+        "^@radix-ui/"
+      ],
+      "groupName": "radix-ui"
+    },
+    {
+      "description": "Group ESLint ecosystem",
+      "matchPackagePatterns": [
+        "^eslint",
+        "^@eslint/",
+        "^typescript-eslint"
+      ],
+      "groupName": "eslint"
+    },
+    {
+      "description": "Group Tailwind ecosystem",
+      "matchPackagePatterns": [
+        "^tailwindcss",
+        "^@tailwindcss/"
+      ],
+      "groupName": "tailwind"
+    },
+    {
+      "description": "Group GitHub Actions updates",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github-actions",
+      "automerge": true
+    }
+  ],
+  "schedule": [
+    "before 7am on Monday"
+  ],
+  "timezone": "America/New_York",
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 3,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": [
+      "before 5am on the first day of the month"
+    ]
+  },
+  "postUpdateOptions": [
+    "npmDedupe"
+  ]
+}

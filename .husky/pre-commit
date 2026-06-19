@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# ─── Lint & Type Check ───────────────────────────────────────────
+npm run lint && npx tsc --noEmit
+
+# ─── Gitleaks (secret detection on staged files) ─────────────────
+if command -v gitleaks &> /dev/null; then
+  echo "🔑 Scanning for secrets (gitleaks)..."
+  gitleaks git --pre-commit --staged --verbose
+  if [ $? -ne 0 ]; then
+    echo "❌ COMMIT BLOCKED: Secrets detected in staged files!"
+    echo "   Remove the secrets and try again."
+    exit 1
+  fi
+  echo "✅ No secrets found"
+else
+  echo "⚠️  gitleaks not installed — skipping secret scan (brew install gitleaks)"
+fi

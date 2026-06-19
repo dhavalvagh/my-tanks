@@ -1,0 +1,96 @@
+#!/bin/bash
+
+# ═══════════════════════════════════════════════════════════════════
+# PRE-PUSH SECURITY GATE
+# Runs locally before any push to GitHub.
+# If ANY check fails, push is blocked until you fix it.
+# ═══════════════════════════════════════════════════════════════════
+
+echo ""
+echo "🔒 Running security gate before push..."
+echo "─────────────────────────────────────────"
+
+# Track failures
+FAILED=0
+
+# ─── 1. Lint with security rules ─────────────────────────────────
+echo ""
+echo "▶ [1/5] ESLint (security rules)..."
+npm run lint --silent
+if [ $? -ne 0 ]; then
+  echo "  ❌ FAIL: Lint errors detected"
+  FAILED=1
+else
+  echo "  ✅ PASS"
+fi
+
+# ─── 2. TypeScript type check ────────────────────────────────────
+echo ""
+echo "▶ [2/5] TypeScript type check..."
+npx tsc --noEmit --pretty 2>&1 | tail -20
+if [ ${PIPESTATUS[0]} -ne 0 ]; then
+  echo "  ❌ FAIL: Type errors detected"
+  FAILED=1
+else
+  echo "  ✅ PASS"
+fi
+
+# ─── 3. npm audit (vulnerabilities) ──────────────────────────────
+echo ""
+echo "▶ [3/5] npm audit (high + critical)..."
+npm audit --audit-level=high 2>&1 | tail -10
+if [ ${PIPESTATUS[0]} -ne 0 ]; then
+  echo "  ⚠️  WARN: Vulnerable dependencies found (run 'npm audit fix')"
+  echo "  ⚠️  Allowing push — fix before merge"
+  # Don't block on audit since some vulns may not have fixes yet
+else
+  echo "  ✅ PASS"
+fi
+
+# ─── 4. License check ────────────────────────────────────────────
+echo ""
+echo "▶ [4/5] License compliance..."
+npx license-checker --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0;CC-BY-3.0;CC-BY-4.0;Unlicense;BlueOak-1.0.0;Python-2.0;OFL-1.1;MPL-2.0" --excludePrivatePackages --summary 2>&1 | tail -5
+if [ ${PIPESTATUS[0]} -ne 0 ]; then
+  echo "  ❌ FAIL: Disallowed license detected"
+  FAILED=1
+else
+  echo "  ✅ PASS"
+fi
+
+# ─── 5. Build check ──────────────────────────────────────────────
+echo ""
+echo "▶ [5/5] Production build..."
+npm run build --silent 2>&1 | tail -5
+if [ ${PIPESTATUS[0]} -ne 0 ]; then
+  echo "  ❌ FAIL: Build failed"
+  FAILED=1
+else
+  echo "  ✅ PASS"
+fi
+
+# ─── 6. Trivy (if installed) ─────────────────────────────────────
+if command -v trivy &> /dev/null; then
+  echo ""
+  echo "▶ [BONUS] Trivy vulnerability scan..."
+  DOCKER_CONFIG=/tmp/trivy-docker trivy fs --severity HIGH,CRITICAL --exit-code 1 --quiet .
+  if [ $? -ne 0 ]; then
+    echo "  ❌ FAIL: Trivy found HIGH/CRITICAL vulnerabilities"
+    FAILED=1
+  else
+    echo "  ✅ PASS"
+  fi
+fi
+
+# ─── Result ──────────────────────────────────────────────────────
+echo ""
+echo "─────────────────────────────────────────"
+if [ $FAILED -ne 0 ]; then
+  echo "🚫 PUSH BLOCKED — Fix the above failures first"
+  echo ""
+  exit 1
+else
+  echo "✅ All security checks passed — pushing..."
+  echo ""
+  exit 0
+fi

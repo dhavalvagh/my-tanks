@@ -1,0 +1,35 @@
+name: Renovate (Self-Hosted)
+
+# This workflow runs Renovate as a GitHub Action.
+# PREFERRED: Install the free Mend Renovate GitHub App instead:
+#   https://github.com/apps/renovate
+# The app runs on Mend's infrastructure (no Actions minutes used).
+# Only enable this workflow if you prefer self-hosted.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  renovate:
+    name: Renovate
+    runs-on: ubuntu-latest
+    if: false # Set to true if NOT using the Renovate GitHub App
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Run Renovate
+        uses: renovatebot/github-action@v41
+        with:
+          configurationFile: renovate.json
+          token: ${{ secrets.RENOVATE_TOKEN || secrets.GITHUB_TOKEN }}
+        env:
+          LOG_LEVEL: info

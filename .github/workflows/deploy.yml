@@ -9,13 +9,147 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  security-events: write
 
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
+  # ─── Pre-deploy Security Gate ──────────────────────────────────
+  security-gate:
+    name: Security Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies (high + critical)
+        id: audit
+        run: |
+          echo "## 🔍 npm Audit" >> $GITHUB_STEP_SUMMARY
+          if npm audit --audit-level=high 2>&1 | tee /tmp/audit.txt; then
+            echo '✅ No high/critical vulnerabilities found' >> $GITHUB_STEP_SUMMARY
+          else
+            echo '❌ Vulnerabilities detected:' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/audit.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Lint with security rules
+        id: lint
+        run: |
+          echo "## 🧹 ESLint (Security Rules)" >> $GITHUB_STEP_SUMMARY
+          if npm run lint 2>&1 | tee /tmp/lint.txt; then
+            echo '✅ No lint or security rule violations' >> $GITHUB_STEP_SUMMARY
+          else
+            echo '❌ Lint errors:' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -30 /tmp/lint.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Type check
+        id: typecheck
+        run: |
+          echo "## 🏷️ TypeScript" >> $GITHUB_STEP_SUMMARY
+          if npx tsc --noEmit 2>&1 | tee /tmp/tsc.txt; then
+            echo '✅ No type errors' >> $GITHUB_STEP_SUMMARY
+          else
+            echo '❌ Type errors:' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -20 /tmp/tsc.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: License compliance
+        id: licenses
+        run: |
+          echo "## 📜 License Compliance" >> $GITHUB_STEP_SUMMARY
+          if npx license-checker --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0;CC-BY-3.0;CC-BY-4.0;Unlicense;BlueOak-1.0.0;Python-2.0;OFL-1.1;MPL-2.0" --excludePrivatePackages --summary 2>&1 | tee /tmp/licenses.txt; then
+            echo '✅ All licenses approved' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/licenses.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo '❌ Disallowed licenses found:' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/licenses.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Trivy vulnerability scan
+        id: trivy
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH'
+          scanners: 'vuln,secret'
+          exit-code: '1'
+          format: 'table'
+          output: 'trivy-report.txt'
+
+      - name: Trivy summary
+        if: always()
+        run: |
+          echo "## 🛡️ Trivy Vulnerability Scan" >> $GITHUB_STEP_SUMMARY
+          if [ -s trivy-report.txt ]; then
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat trivy-report.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo '✅ No HIGH/CRITICAL vulnerabilities found' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Gate summary
+        if: always()
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Security Gate Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| npm audit | ${{ steps.audit.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ESLint security | ${{ steps.lint.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| TypeScript | ${{ steps.typecheck.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Licenses | ${{ steps.licenses.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trivy | ${{ steps.trivy.outcome == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+
+  # ─── Gitleaks (Secret Detection) ───────────────────────────────
+  gitleaks:
+    name: Gitleaks Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ─── Build ─────────────────────────────────────────────────────
   build:
+    name: Build
+    needs: [security-gate, gitleaks]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -44,7 +178,9 @@ jobs:
         with:
           path: ./dist
 
+  # ─── Deploy ────────────────────────────────────────────────────
   deploy:
+    name: Deploy
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

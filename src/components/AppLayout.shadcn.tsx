@@ -62,13 +62,8 @@ export default function AppLayout({
     { id: "logs", label: "Logs", icon: Notebook },
   ] as const;
 
-  const getThemeIcon = () => {
-    if (themeMode === "light") return SunDim;
-    if (themeMode === "dark") return Moon;
-    return Monitor;
-  };
-
-  const ThemeIcon = getThemeIcon();
+  const ThemeIcon =
+    themeMode === "light" ? SunDim : themeMode === "dark" ? Moon : Monitor;
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">

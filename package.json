@@ -8,7 +8,13 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "npm run security:gate && gh-pages -d dist",
+    "prepare": "husky",
+    "security:audit": "npm audit --audit-level=high",
+    "security:licenses": "npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0;CC-BY-3.0;CC-BY-4.0;Unlicense;BlueOak-1.0.0;Python-2.0;OFL-1.1;MPL-2.0' --excludePrivatePackages --summary",
+    "security:gate": "npm run lint && npx tsc --noEmit && npm run security:audit && npm run build",
+    "security:trivy": "trivy fs --severity HIGH,CRITICAL --exit-code 1 .",
+    "security:full": "npm run security:gate && npm run security:licenses && npm run security:trivy"
   },
   "dependencies": {
     "@fontsource/geist-mono": "^5.2.8",
@@ -43,8 +49,10 @@
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
+    "eslint-plugin-security": "^4.0.1",
     "gh-pages": "^6.3.0",
     "globals": "^16.5.0",
+    "husky": "^9.1.7",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3",
