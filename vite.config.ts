@@ -1,6 +1,6 @@
-import { defineConfig } from "vite"
-import react from "@vitejs/plugin-react"
-import path from "path"
+import react from "@vitejs/plugin-react";
+import path from "path";
+import { defineConfig } from "vite";
 
 export default defineConfig({
   base: "/my-tanks/",
@@ -14,12 +14,21 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'radix-ui': ['@radix-ui/react-dialog', '@radix-ui/react-tabs', '@radix-ui/react-switch', '@radix-ui/react-select', '@radix-ui/react-dropdown-menu', '@radix-ui/react-slot', '@radix-ui/react-label'],
-          'react-vendor': ['react', 'react-dom']
-        }
-      }
+          "radix-ui": [
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-tabs",
+            "@radix-ui/react-switch",
+            "@radix-ui/react-select",
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-slot",
+            "@radix-ui/react-label",
+          ],
+          "react-vendor": ["react", "react-dom"],
+          motion: ["framer-motion"],
+        },
+      },
     },
     chunkSizeWarningLimit: 600,
-    sourcemap: false
-  }
-})
+    sourcemap: false,
+  },
+});

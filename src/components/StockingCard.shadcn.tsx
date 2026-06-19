@@ -1,48 +1,49 @@
-import { useState } from "react"
-import type { Tank } from "./TankManager.shadcn"
-import type { FishRecord } from "./FishManager.shadcn"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
+import type { FishRecord } from "./FishManager.shadcn";
+import type { Tank } from "./TankManager.shadcn";
 
 export type FishBioload = {
-  name: string
-  count: number
-  bioloadPerFish: number
-  totalBioload: number
-  imageUrl?: string
-}
+  name: string;
+  count: number;
+  bioloadPerFish: number;
+  totalBioload: number;
+  imageUrl?: string;
+};
 
 type StockingCardProps = {
-  tank: Tank
-  tankVolume: number
-  fishInTank: FishRecord[]
-  fishBioloads: FishBioload[]
-  totalBioload: number
-  capacity: number
-  ratio: number
-  colors: string[]
-  onClick?: () => void
-}
+  tank: Tank;
+  tankVolume: number;
+  fishInTank: FishRecord[];
+  fishBioloads: FishBioload[];
+  totalBioload: number;
+  capacity: number;
+  ratio: number;
+  colors: string[];
+  onClick?: () => void;
+};
 
-export default function StockingCard({ 
-  tank, 
-  tankVolume, 
-  fishInTank, 
-  fishBioloads, 
-  totalBioload, 
-  capacity, 
-  ratio, 
+export default function StockingCard({
+  tank,
+  tankVolume,
+  fishInTank,
+  fishBioloads,
+  totalBioload,
+  capacity,
+  ratio,
   colors,
-  onClick
+  onClick,
 }: StockingCardProps) {
-  const [hoveredFish, setHoveredFish] = useState<FishBioload | null>(null)
+  const [hoveredFish, setHoveredFish] = useState<FishBioload | null>(null);
 
   return (
-    <div 
+    <div
       onClick={onClick}
       className={cn(
-        "overflow-hidden rounded-lg border bg-card shadow-md transition-all",
-        onClick && "cursor-pointer hover:shadow-xl hover:-translate-y-0.5 hover:border-primary"
+        "overflow-hidden rounded-2xl border bg-card shadow-sm transition-all duration-200",
+        onClick &&
+          "cursor-pointer hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30",
       )}
     >
       {/* Tank Visual Header */}
@@ -50,14 +51,11 @@ export default function StockingCard({
         <div className="mb-2 text-xs uppercase tracking-widest text-white/80">
           {tank.label}
         </div>
-        <h3 className="mb-2 text-2xl font-bold text-white">
-          {tank.name}
-        </h3>
-        <div className="mb-1 text-sm text-white/90">
-          {tankVolume}L
-        </div>
+        <h3 className="mb-2 text-2xl font-bold text-white">{tank.name}</h3>
+        <div className="mb-1 text-sm text-white/90">{tankVolume}L</div>
         <div className="text-sm text-white/80">
-          {fishInTank.length} species · {fishInTank.reduce((sum, f) => sum + f.count, 0)} fish
+          {fishInTank.length} species ·{" "}
+          {fishInTank.reduce((sum, f) => sum + f.count, 0)} fish
         </div>
         <Badge
           variant="secondary"
@@ -76,26 +74,31 @@ export default function StockingCard({
                 {hoveredFish.name}
               </div>
               <div className="text-xs text-muted-foreground">
-                Count: {hoveredFish.count} · Bioload: {hoveredFish.totalBioload.toFixed(1)} ({((hoveredFish.totalBioload / totalBioload) * 100).toFixed(1)}%)
+                Count: {hoveredFish.count} · Bioload:{" "}
+                {hoveredFish.totalBioload.toFixed(1)} (
+                {((hoveredFish.totalBioload / totalBioload) * 100).toFixed(1)}%)
               </div>
             </div>
           </div>
         )}
-        
+
         <div className="relative h-40 w-40">
           <svg viewBox="-10 -10 120 120" className="-rotate-90">
             {fishBioloads.map((fish, idx) => {
-              const percentage = (fish.totalBioload / totalBioload) * 100
+              const percentage = (fish.totalBioload / totalBioload) * 100;
               const startPercentage = fishBioloads
                 .slice(0, idx)
-                .reduce((sum, f) => sum + (f.totalBioload / totalBioload) * 100, 0)
-              
-              const startAngle = (startPercentage / 100) * 360
-              const endAngle = ((startPercentage + percentage) / 100) * 360
-              const largeArcFlag = percentage > 50 ? 1 : 0
+                .reduce(
+                  (sum, f) => sum + (f.totalBioload / totalBioload) * 100,
+                  0,
+                );
 
-              const outerRadius = 45
-              const innerRadius = 28
+              const startAngle = (startPercentage / 100) * 360;
+              const endAngle = ((startPercentage + percentage) / 100) * 360;
+              const largeArcFlag = percentage > 50 ? 1 : 0;
+
+              const outerRadius = 45;
+              const innerRadius = 28;
 
               // Special case: if this segment is 100% (or very close), draw it as a complete ring
               if (percentage >= 99.9) {
@@ -110,32 +113,41 @@ export default function StockingCard({
                       strokeWidth={outerRadius - innerRadius}
                       className={cn(
                         "cursor-pointer transition-all",
-                        hoveredFish === fish && "scale-110 drop-shadow-lg"
+                        hoveredFish === fish && "scale-110 drop-shadow-lg",
                       )}
                       style={{
-                        filter: hoveredFish === fish 
-                          ? "drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4))" 
-                          : "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))",
-                        transformOrigin: "center"
+                        filter:
+                          hoveredFish === fish
+                            ? "drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4))"
+                            : "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))",
+                        transformOrigin: "center",
                       }}
                       onMouseEnter={() => setHoveredFish(fish)}
                       onMouseLeave={() => setHoveredFish(null)}
                     />
                   </g>
-                )
+                );
               }
 
               // Outer arc points
-              const outerStartX = 50 + outerRadius * Math.cos((Math.PI * startAngle) / 180)
-              const outerStartY = 50 + outerRadius * Math.sin((Math.PI * startAngle) / 180)
-              const outerEndX = 50 + outerRadius * Math.cos((Math.PI * endAngle) / 180)
-              const outerEndY = 50 + outerRadius * Math.sin((Math.PI * endAngle) / 180)
+              const outerStartX =
+                50 + outerRadius * Math.cos((Math.PI * startAngle) / 180);
+              const outerStartY =
+                50 + outerRadius * Math.sin((Math.PI * startAngle) / 180);
+              const outerEndX =
+                50 + outerRadius * Math.cos((Math.PI * endAngle) / 180);
+              const outerEndY =
+                50 + outerRadius * Math.sin((Math.PI * endAngle) / 180);
 
               // Inner arc points
-              const innerStartX = 50 + innerRadius * Math.cos((Math.PI * startAngle) / 180)
-              const innerStartY = 50 + innerRadius * Math.sin((Math.PI * startAngle) / 180)
-              const innerEndX = 50 + innerRadius * Math.cos((Math.PI * endAngle) / 180)
-              const innerEndY = 50 + innerRadius * Math.sin((Math.PI * endAngle) / 180)
+              const innerStartX =
+                50 + innerRadius * Math.cos((Math.PI * startAngle) / 180);
+              const innerStartY =
+                50 + innerRadius * Math.sin((Math.PI * startAngle) / 180);
+              const innerEndX =
+                50 + innerRadius * Math.cos((Math.PI * endAngle) / 180);
+              const innerEndY =
+                50 + innerRadius * Math.sin((Math.PI * endAngle) / 180);
 
               return (
                 <path
@@ -151,23 +163,22 @@ export default function StockingCard({
                   stroke="hsl(var(--card))"
                   strokeWidth="1"
                   className="cursor-pointer transition-all"
-                  style={{ 
-                    filter: hoveredFish === fish 
-                      ? "drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4))" 
-                      : "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))",
+                  style={{
+                    filter:
+                      hoveredFish === fish
+                        ? "drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4))"
+                        : "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))",
                     transform: hoveredFish === fish ? "scale(1.1)" : "scale(1)",
-                    transformOrigin: "center"
+                    transformOrigin: "center",
                   }}
                   onMouseEnter={() => setHoveredFish(fish)}
                   onMouseLeave={() => setHoveredFish(null)}
                 />
-              )
+              );
             })}
           </svg>
           <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-            <div className="text-2xl font-bold">
-              {totalBioload.toFixed(1)}
-            </div>
+            <div className="text-2xl font-bold">{totalBioload.toFixed(1)}</div>
             <div className="text-xs text-muted-foreground">
               / {capacity.toFixed(0)}
             </div>
@@ -175,5 +186,5 @@ export default function StockingCard({
         </div>
       </div>
     </div>
-  )
+  );
 }
