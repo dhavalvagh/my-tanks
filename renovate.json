@@ -82,27 +82,27 @@
     },
     {
       "description": "Group Radix UI updates together",
-      "matchPackagePatterns": [
-        "^@radix-ui/"
-      ],
-      "groupName": "radix-ui"
+      "groupName": "radix-ui",
+      "matchPackageNames": [
+        "/^@radix-ui//"
+      ]
     },
     {
       "description": "Group ESLint ecosystem",
-      "matchPackagePatterns": [
-        "^eslint",
-        "^@eslint/",
-        "^typescript-eslint"
-      ],
-      "groupName": "eslint"
+      "groupName": "eslint",
+      "matchPackageNames": [
+        "/^eslint/",
+        "/^@eslint//",
+        "/^typescript-eslint/"
+      ]
     },
     {
       "description": "Group Tailwind ecosystem",
-      "matchPackagePatterns": [
-        "^tailwindcss",
-        "^@tailwindcss/"
-      ],
-      "groupName": "tailwind"
+      "groupName": "tailwind",
+      "matchPackageNames": [
+        "/^tailwindcss/",
+        "/^@tailwindcss//"
+      ]
     },
     {
       "description": "Group GitHub Actions updates",
