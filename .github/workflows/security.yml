@@ -129,7 +129,7 @@ jobs:
           category: 'owasp-dependency-check'
 
       - name: Upload OWASP DC HTML report
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
           name: owasp-dependency-check-report
@@ -165,7 +165,7 @@ jobs:
             --output=osv-results.json
 
       - name: Upload OSV results
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
           name: osv-scanner-results
@@ -193,7 +193,7 @@ jobs:
         uses: actions/checkout@v7.0.0
 
       - name: Dependency Review
-        uses: actions/dependency-review-action@v4.9.0
+        uses: actions/dependency-review-action@v5.0.0
         with:
           fail-on-severity: high
           deny-licenses: GPL-3.0, AGPL-3.0
@@ -210,7 +210,7 @@ jobs:
           fetch-depth: 0
 
       - name: Gitleaks scan
-        uses: gitleaks/gitleaks-action@v2.3.9
+        uses: gitleaks/gitleaks-action@v3.0.0
         env:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
